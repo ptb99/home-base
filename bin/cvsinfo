@@ -1,0 +1,72 @@
+#! /usr/bin/perl
+###############################################################################
+#
+# File:         cvsinfo
+# RCS:          $Header: $
+# Description:  List CVS files in the current directory and below that are
+#		not up-to-date.  These files are typically those which have
+#		been modified or need updating.
+#
+#		This is a new, rewritten, version, thanks to feedback from
+#		Anton Berezin <tobez@plab.ku.dk> and
+#		Oliver Fromme <olli@dorifer.heim3.tu-clausthal.de>.
+#
+#		Usage:
+#
+#			cvsinfo [-a] [-l]
+#
+#		Options:
+#
+#		-a	Show status of all files, and not just those which
+#			are not up-to-date.
+#
+#		-l	Show status of files in the current directory only.
+#			Do not recurse into subdirectories.
+#
+# Author:       Darryl Okahata
+# Created:      Thu Sep 23 14:32:34 1999
+# Modified:     Thu Sep 23 14:45:03 1999 (Darryl Okahata) darrylo@sr.hp.com
+# Language:     CPerl
+# Package:      N/A
+# Status:       Experimental
+#
+# (C) Copyright 1999, Hewlett-Packard, all rights reserved.
+#
+###############################################################################
+
+###############################################################################
+
+require 'getopts.pl';
+&Getopts('al');
+$all_status = 1 if ($opt_a);
+
+# Explicitly specify options, just in case the user has overridden them in
+# ~/.cvsrc.
+if ($opt_l) {
+    $recursive = "-l";
+} else {
+    $recursive = "-R";
+}
+
+$dir = ".";
+open(IN, "cvs status $recursive 2>&1 |") || die "$!";
+while(<IN>) {
+    if (/^cvs\s+server:\s+Examining\s+([^\s].*)$/) {
+	$dir = $1;
+    } elsif (/^File:\s+(?:no\s+file\s+)?([^\s]+)\s+Status:\s+(.+)$/i){
+	$file = $1;
+	$status = $2;
+	if ($all_status || $status ne 'Up-to-date') {
+	    if ($status eq 'Needs Patch') {
+		$status = 'Needs Updating';
+	    }
+	    printf("%-50s %s\n", ($dir eq '.') ? $file : "$dir/$file",
+		   $status);
+	    if ($status =~ /Locally Modified/) {
+		push(@update_files, $file);
+	    }
+	}
+    } elsif (/\[status\s+aborted\]/) {
+	die "$_\n";
+    }
+}

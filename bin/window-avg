@@ -1,0 +1,38 @@
+#! /usr/bin/perl
+
+###
+### smooth out a time series by averaging every N rows
+###
+
+use strict;
+
+my $N = shift;
+
+my @sum = ();
+my @sum2 = ();
+my $count = 0;
+
+while (<>) {
+    my @F = split;
+    for (my $i=0; $i < @F; $i++) {
+	$sum[$i] += $F[$i];
+	$sum2[$i] += $F[$i] * $F[$i];
+    }
+    $count++;
+    readOut() if ($count == $N);
+}
+
+
+
+sub readOut() {
+
+    for (my $i=0; $i < @sum; $i++) {
+	printf "%.5f+/-%.5f ", $sum[$i]/$count,
+    	sqrt(($sum2[$i] - $sum[$i]*$sum[$i]/$count))/($count - 1);
+    }
+    printf "\n";
+
+    # reset
+    $count = 0;
+    @sum = @sum2 = ();
+}

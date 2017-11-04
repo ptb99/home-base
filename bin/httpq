@@ -1,0 +1,105 @@
+#! /usr/local/bin/perl
+#
+# program for checking out www server responses.
+# TonyJ   3/7/95
+
+unshift(@INC,"/u/oh/Mwww/PerlLib");
+require "html.pl";
+require "Socket.pm";
+
+$usg = 'Usage: httpq [<options>] <http-url>
+	<http-url>	-- URL to fetch (can be relative to http://www)
+	-help  	        -- print this message
+	-level		-- HTTP level to use (default 1.0)
+	-nocache        -- force cache update
+';
+$sockaddr = 'S n a4 x8';
+chop($thishost = `hostname`);
+($name, $aliases, $proto) = getprotobyname("tcp");
+($name, $aliases, $type, $len, $thisaddr) = gethostbyname($thishost);
+$thissock = pack($sockaddr, &Socket::AF_INET, 0, $thisaddr);
+
+$defport = "80";
+$deftype = "http";
+$defhost = "www";
+$defpath = "/";
+$httplevel = "1.0";
+$nocache = 0;
+$url = "";
+$pragma = "";
+$useragent  = "User-Agent: http.pl\r\n";
+$from       = "From: $user@$thishost\r\n";
+$mimeaccept = "Accept: */*\r\n";     #-- accept any mime type
+$timeout = 60;
+
+
+while ($#ARGV >= $[) {
+	$arg = shift @ARGV;
+
+	if ($arg eq "-level") {
+		$arg = shift @ARGV;
+		if ($arg =~ /^[\d\.]+$/){
+			$httplevel = $arg;
+			next;
+		}
+		else { die "Bad arg for -level\n$usg"; }
+	}
+
+	if ($arg eq "-nocache") { $nocache = 1; next; }
+	if ($arg eq "-help") { die "$usg"; }
+	if ($arg =~ /^-/) { die "Invalid flag\n$usg"; }
+        if ($url eq "" ) { $url = $arg; next; }
+        die $usg;
+}
+if ($url eq "") { die $usg; }
+
+($type,$host,$port,$path,$request) =
+     &html'parse($deftype,$defhost,$defport,$defpath,$url);
+
+unless ($type eq "http") { 
+     die "httpq: Can only handle http requests, not $type"; }
+
+# Convert from relative to absolute URL:
+
+if ($nocache) { $pragma = "pragma: no-cache\r\n"; }
+
+$response = &get($host,$port,$request,$httplevel,$mimeaccept,$pragma);
+
+print $response;
+exit;
+
+# perform an http request and return the result
+# Code adapted from Marc van Heyningen
+sub get {
+    local($host,$port,$request,$version,$accept,$pragma) = @_;
+    ($fqdn, $aliases, $type, $len, $thataddr) = gethostbyname($host);
+    $that = pack($sockaddr, &Socket::AF_INET, $port, $thataddr);
+    socket(FS, &Socket::AF_INET, &Socket::SOCK_STREAM, $proto) || return undef;
+    #bind(FS, $thissock) || return undef;
+    local($/);
+    unless (eval q!
+        $SIG{'ALRM'} = "http'timeout";
+        alarm($timeout);
+        connect(FS, $that) || return undef;
+        select(FS); $| = 1; select(STDOUT);
+	# MIME header treatment from Martijn Koster
+        if ($version > 0.99) {
+            print FS "GET $request HTTP/$version\r\n$useragent$from$accept$pragma\r\n"; 
+            $page = <FS>; 
+        }
+        else {        # old style request
+            print FS "GET $request\r\n";
+            $page = <FS>; # gives old-style reply
+        }
+        $SIG{'ALRM'} = "IGNORE";
+        !) {
+            return undef;
+        }
+    close(FS);
+    $page;
+}
+
+sub timeout { die "Timeout\n"; }
+
+__END__
+

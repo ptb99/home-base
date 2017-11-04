@@ -1,0 +1,17 @@
+#!/bin/sh
+# simple script to check all possible MH folders for new (i.e. unseen) mail
+#
+unseen=`mhparam Unseen-Sequence`
+drafts=`mhparam Draft-Folder`
+
+for f in `folders -fast`;
+do
+   if [ $f != $drafts -a $f != "tmp" -a -f `mhpath +$f`/.mh_sequences ]; then
+      if grep "$unseen" `mhpath +$f`/.mh_sequences >/dev/null ; then
+	 scan +$f -header $unseen
+	 echo ""
+      fi
+   fi
+done
+
+exit 0

@@ -1,0 +1,18 @@
+#! /usr/bin/perl
+
+while (<>) {
+    @F = split;
+    for ($i=0; $i < @F; $i++) {
+        $sum[$i] += $F[$i];
+        $sum2[$i] += $F[$i] * $F[$i];
+    }
+    $n++;
+}
+
+#print "@sum $n\n";
+
+for ($i=0; $i < @sum; $i++) {
+    printf "%.5f+/-%.5f ", $sum[$i]/$n,
+        sqrt(($sum2[$i] - $sum[$i]*$sum[$i]/$n))/($n - 1);
+}
+printf "\n";

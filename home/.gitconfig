@@ -1,0 +1,10 @@
+[user]
+        name = Tom Pavel
+	email = pavel@alum.mit.edu
+[push]
+	default = simple
+[alias]
+	metree = log --color --graph --decorate --oneline --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	br = branch -avv
+	co = checkout
+	ci = commit

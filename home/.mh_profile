@@ -1,0 +1,35 @@
+#: Comments are a hack.
+#: They look like options for the nonexistent # command.
+#:
+#: General variables:
+Path: 			Mail
+Aliasfile:		aliases
+Draft-Folder:		drafts
+Previous-Sequence:	pseq
+Unseen-Sequence:	unseen
+Signature:		Tom Pavel
+Alternate-Mailboxes:    pavel@alum.mit.edu,pavel@scout.networkphysics.com,tpavel@networkphysics.com,tpavel@opnet.com
+Msg-Protect:		600
+Folder-Protect:		711
+#:
+#: Program variables:
+mhe:
+rmmproc:		/bin/rm
+moreproc:		less
+lproc:			less
+showproc:		mhl
+mhl:			-clear -nobell
+prompter-next:          emacs -nw
+repl:			-noannotate -nocc me -filter mhl.repl
+forw:			-noannotate -format
+scan:			-form scan.timely
+msgchk:			-norpop -host gto
+inc:			-norpop -form scan.timely
+#: folder:		-recurse #(should we get into subfolders...)
+#:
+#: These are for exmh:
+Folder-Order:           inbox contacts root cvs fbsd netbsd * drafts outgoing tmp
+Header-Suppress:        ^received ^message-identification:
+forwtweak:		1
+mhshow-show-image:	xv '%f'
+

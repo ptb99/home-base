@@ -1,0 +1,83 @@
+#! /bin/tcsh -f
+#
+# csh commands to set environment variables and things that inherit:
+#
+
+if (! $?USER) setenv USER `whoami`
+
+
+# Set these once per family of shells:
+umask 002
+limit coredumpsize 0	# I never debug cores anyway
+#unlimit maxproc 	# Good preventive measure
+
+
+
+### Set up the PATH:
+### path is automatically translated into PATH.  Plus, the syntax is easier...
+
+#set x11path=(/usr/bin/X11 /usr/openwin/bin)
+#set x11path=(/usr/X11R6/bin /opt/kde3/bin /opt/gnome/bin)
+set x11path=(/usr/X11R6/bin)
+#set javabin=(/usr/lib/java/jre/bin /usr/lib/java/bin)
+#set something = (/extras/bin /opt/XXX/bin)
+
+set path=(${HOME}/bin \
+  /usr/local/bin $x11path /usr/local/sbin \
+  /bin /usr/bin /usr/bin/mh /sbin /usr/sbin /usr/games )
+
+
+# Don't need this if /etc/man.conf is setup right:
+#setenv MANPATH /usr/local/man:/usr/share/man:/usr/X11R6/man
+# except that xman (and maybe tkman) need it...
+
+
+### Printers:
+setenv PRINTER hp
+setenv PRINTER_Postscript hp
+
+
+### misc. env variables:
+setenv LOGSHELL $SHELL			#Use this for a hack in .xinitrc
+#setenv MAIL /var/mail/$USER
+#set mail=$MAIL
+#setenv MORE -ce
+setenv LESS -MqedR
+setenv PAGER less
+setenv EDITOR emacs
+setenv ESHELL /bin/csh
+#setenv BLOCKSIZE K
+#setenv BLOCKSIZE 1k	# NetBSD
+## need an alt way to flag this...
+if ("$DISPLAY" != "") then
+    setenv EDITOR emacsclient
+else
+    setenv EDITOR emacs
+endif
+
+# undo case-insensitive sorting and the like:
+setenv LANG C
+
+#setenv NNTPSERVER nntp.stanford.edu
+setenv EXINIT 'set ai sm noeb redraw wm=8'
+#setenv OPENWINHOME /usr/openwin
+setenv WWW_HOME 'file:/home/pavel/WWW/notebook.html'
+setenv MM_CHARSET iso-8859-1          # for mhn
+#setenv HOSTALIASES	 $HOME/.hostaliases
+
+# Make GCC a bit quicker:
+#setenv TMPDIR /tmp
+
+
+# The highly confusing X app-defaults path:
+#setenv XUSERFILESEARCHPATH \
+#  ${HOME}/app-defaults/%N%C:${HOME}/app-defaults/%N:/usr/lib/X11/app-defaults/%N%C:/usr/lib/X11/app-defaults/%N
+# set this for R4-level app (xosview):
+setenv XAPPLRESDIR $HOME/app-defaults 
+
+
+setenv ENVSET 1
+
+# Local Variables:
+# mode: sh
+# End:

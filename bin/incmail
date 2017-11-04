@@ -1,0 +1,43 @@
+#! /bin/sh
+
+# Add MH progs to path:
+PATH=/usr/local/bin/:$PATH
+export PATH
+
+
+SPOOLFILE=/var/mail/pavel
+INCARGS="-nochangecur"
+MAILROOT=`mhpath +`
+
+if [ -x /usr/local/lib/mh/slocal ]; then
+    SLOCAL=/usr/local/lib/mh/slocal
+elif [ -x /usr/local/libexec/nmh/slocal ]; then
+    SLOCAL=/usr/local/libexec/nmh/slocal
+else
+    exit 1;
+fi    
+
+# First, test to see if we even have any new mail:
+[ -s $SPOOLFILE ] || exit 0
+
+# Make sure our staging folder is writable (do we have an AFS token?)
+[ -w $MAILROOT/tmp ] || exit 1
+
+# Use a file in ~/Mail to protect against multiple incmail's being
+# launched from cron
+if [ -f $MAILROOT/incmail.lock ]; then
+    exit 0
+else
+    touch $MAILROOT/incmail.lock
+fi
+
+inc $INCARGS +tmp -silent || exit 0
+cd $MAILROOT/tmp
+for i in [0-9] [0-9][0-9] [0-9][0-9]*
+do
+    # need the test -f in case we don't have > 10 messages and
+    # [0-9][0-9] doesn't get expanded to anything... 
+    [ -f $i ] && $SLOCAL < $i && rm -f $i
+done
+
+rm $MAILROOT/incmail.lock

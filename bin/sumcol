@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# AWK script to sum the specified column of stdin
+#
+col=$1
+shift
+awkprog='/[0-9.]+/{sum += $'$col';}
+         END {print sum;}'
+
+awk "$awkprog" $*

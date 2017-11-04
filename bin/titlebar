@@ -1,0 +1,9 @@
+#! /bin/sh
+
+# titlebar -- This is a simple wrapper around the xterm ESC sequences
+#             to put a string into the title bar.
+
+
+ESC=''
+BEL=''
+echo "$ESC]0;${*}$BEL"

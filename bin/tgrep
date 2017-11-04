@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# tgrep - grep for $1 in the tree below $*
+#
+pattern="$1"
+shift
+
+find $* -type f -print | xargs grep $pattern

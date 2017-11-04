@@ -1,0 +1,215 @@
+#! /usr/bin/perl
+use strict;
+use vars qw($opt_b $opt_l $opt_u $opt_d $opt_f $opt_w $opt_z $opt_g
+            $opt_o $opt_h $opt_n $opt_a $opt_s $opt_L $opt_p $opt_c);
+use Getopt::Std;
+#
+# Histogram a list from a file
+#
+# Syntax:
+#
+#   fhist1d -l $lower -u $upper -b $nbin -d $dbin -f $freq_col -w $wgt_col \
+#           -z $zip_flag -g $log_flag -o oflow -h header -n nozero \
+#           -a $avg -s $sigma -c cumulative $filename
+#
+#   where: lower=min bin, upper=max bin, nbin=no. of bins, dbin=binsize
+#          freq_col=column in file to use as frequency, wgt_col=column in file
+#          to use as weight, zip_flag=unzip data flag, log_flag=flag to take
+#          log10(frequency data) before histogramming, oflow=number of values
+#          outside lower and upper limits, header=first row header flag
+#          nozero=flag to suppress outputting histogram=0 bins,
+#          avg=flag to output avg of wgt_col ($wgt_col/$freq_col),
+#          sigma=flag to output standard deviation of wgt_col
+#          (sqrt(($wgt_col^2/$freq_col) - ($wgt_col/$freq_col)^2),
+#          filename=filename of list to be histogrammed
+# Result:
+#
+#   Return a list of all added values, the corresponding number of times
+#   that each value has been added and (if the -w option is specified), the
+#   weighted sum of each value.  The list contains a sublist of numbers,
+#   where the first element is a value that has been added, the second
+#   element is the number of times that the first element has been added,
+#   and optionally the third element is the weighted sum of the occurrences
+#   of the first element.  Furthermore, the list is sorted in increasing
+#   order of the first element.
+#
+# Note:
+#
+#   The frequency column defaults to 0 if the -f option is unspecified.
+#
+#   The bins specified by the options and output by this procedure
+#   specify the right-edge of the bins and are all RIGHT-SIDE inclusive.
+#   For example, if you have bins: {0 1 2 3}, the the corresponding
+#   frequencies (or number of [weighted] occurrences will be: {(-1<x<=0),
+#   (0<x<=1), (1<x<=2), (2<x<=3)}.
+#
+#   The -b OR -d option should be used
+#
+#   If the -z flag is set, then a zcat operation is performed on the
+#   specified data file
+#
+
+    if (@ARGV < 1) {
+         print stderr "usage: $0 ";
+         print stderr "\[-acgHLnopsz\] ";
+         print stderr "\[-l lower\] \[-u upper\] \[-b nbin\] ";
+         print stderr "\[-d binsize\] \[-f column\] \[-w column\] ";
+         print stderr "\[-h nrows\] ";
+         print stderr "filename \n";
+         print stderr "help: $0 -H\n";
+         exit 0;
+    };
+
+    if (@ARGV[0] eq "-H") {
+         print stderr "OPTIONS\n";
+         print stderr "      a    Flag to output average of the weighted entries\n";
+         print stderr "      b    Number of bins in histogram.\n";
+         print stderr "      c    Flag to print cumulative distribution\n";
+         print stderr "      d    Bin size\n";
+         print stderr "      f    Column in input file to histogram\n";
+         print stderr "      g    Flag to take logarithmic (base 10) bins\n";
+         print stderr "      h    Number of rows to skip from top of input file\n";
+         print stderr "      l    Lower edge of first bin\n";
+         print stderr "      L    Flag to specify lower/upper edge inclusive/exclusive\n";
+         print stderr "      n    Flag to suppress output of bins with no histogram entries\n";
+         print stderr "      o    Flag to output underflow/overflow counts\n";
+         print stderr "      p    Flag to output normalized freq and/or weight (probability)\n";
+         print stderr "      s    Flag to output the rms of the weighted entries\n";
+         print stderr "      u    Upper edge of last bin\n";
+         print stderr "      w    Column in input file used to weight each histogram entry\n";
+         print stderr "      z    Flag to zcat the input file\n";
+         exit 0;
+    }
+
+    # Set DEFAULT values for the options
+    $opt_b=100;    # number of bins
+    $opt_c=0;      # flag to print cumulative distribution
+    $opt_l=0;      # lower edge of first bin
+    $opt_u=10000;  # upper edge of last bin
+    $opt_d=-1;     # bin size
+    $opt_f=0;      # frequency column
+    $opt_w=-1;     # weight column
+    $opt_z=0;      # flag to zcat the input file
+    $opt_g=0;      # flag to take logarithmic (base 10) bins
+    $opt_o=0;      # flag to print underflow/overflow stats
+    $opt_h=0;      # number of lines to skip at top of file
+    $opt_n=0;      # flag to suppress printing of bins with no counts
+    $opt_p=0;      # flag to output normalized freq and/or weight (probability)
+    $opt_a=0;      # flag to print the average of the weights
+    $opt_s=0;      # flag to print the sqrt(variance) of the weights
+    $opt_L=0;      # flag to specify lower/upper edge inclusive/exclusive
+
+    # Look for pairs of {-swtch val} in args
+    getopts('l:u:b:d:f:w:zgoh:nasLpc');
+
+    # Check for errors in options syntax
+    if (@ARGV > 1) {
+         print stderr "Invalid options syntax: @ARGV\n";
+         exit 0
+    }
+    my $filename = $ARGV[0];
+
+    # Assign INPUT filehandle to filename or STDIN
+    if ($filename eq "") {
+         *INPUT = *STDIN;
+    } else {
+         my $filecmd = ($opt_z == 1) ? "zcat $filename |" : "$filename";
+         open INPUT, "$filecmd" or die $!;
+    }
+
+    # Peform logic error checking
+    if ($opt_a && ($opt_w==-1)) {
+         print stderr "Average flag (-a) set without specifying weight column.\n";
+         exit 1;
+    }
+    if ($opt_s && (not $opt_a)) {
+         print stderr "Standard deviation flag (-s) set without ";
+         print stderr "setting Average flag (-a).\n";
+         exit 1;
+    }
+
+    # Define bin properties
+    if ($opt_d != -1) {
+         $opt_b =  (($opt_u-$opt_l)/$opt_d);
+         $opt_b =  int($opt_b) + ($opt_b > int($opt_b));   # ceil
+    } else {
+         $opt_d =  (($opt_u-$opt_l)/$opt_b);
+    }
+
+    # Initialize histogram
+    my (@freq, @wfreq, @wfreq2);
+    foreach (0..$opt_b-1) {
+         $freq[$_] = 0;
+         if ($opt_w !=-1) {
+              $wfreq[$_] = 0.0;
+              $wfreq2[$_]= 0.0 if ($opt_s);
+         }
+    }
+
+    # Skip any header rows
+    foreach (0..$opt_h-1) {<INPUT>};
+
+    # Bin and accumulate histogram
+    my ($oflow,$uflow,$sumw,$sumc,$qum)=(0,0,0,0,0);
+    while (<INPUT>) {
+         my @F = split;
+         my $v = $F[$opt_f];
+         if ($opt_g) { $v = ($v > 0) ? log($v)/log(10) : -1E6 };
+         my $w = $F[$opt_w] if ($opt_w !=-1);
+
+         my $rbin = ($v - $opt_l)/$opt_d;
+         my $ibin = int($rbin) - ($rbin < 0); # int() != floor()
+         $ibin   += ($rbin > $ibin) - 1 if ($opt_L == 0);
+         if (($ibin >= 0) && ($ibin < $opt_b)) {
+              $freq[$ibin]++;
+              if ($opt_w !=-1) {
+                   $wfreq[$ibin] += $w;
+                   $wfreq2[$ibin]+= $w**2 if ($opt_s);
+              }
+         } else {
+              if ($ibin < 0) {
+                   $uflow++;
+                   my $dq = ($opt_w != -1) ? $w : 1;
+                   $qum += $dq;
+              } else { $oflow++ };
+         }
+         $sumw += $w if ($opt_w != -1);
+         $sumc++;
+    }
+    close INPUT;
+    my $norm = ($opt_w != -1) ? $sumw : $sumc;
+    $qum /= $norm;
+
+    # Output the histogram results
+    my $label_u = ($opt_L == 0) ? $opt_u : $opt_u-$opt_d;
+    my $label_l = ($opt_L == 0) ? $opt_l+$opt_d : $opt_l;
+    foreach (0..$opt_b-1) {
+       if ($opt_n && ($freq[$_]==0)) {next};
+       my $bin = ($_/($opt_b-1))*($label_u - $label_l) + $label_l;
+       my $fout= ($opt_p) ? $freq[$_]/$sumc : $freq[$_];
+       print "$bin $fout ";
+       if ($opt_w !=-1) {
+         my $wout = ($opt_p) ? $wfreq[$_]/$sumw : $wfreq[$_];
+         print "$wout ";
+         my $afreq;
+         if ($opt_a) {
+              $afreq = ($freq[$_]>0) ? $wfreq[$_]/$freq[$_] : 0;
+              print "$afreq ";
+         }
+         if ($opt_s) {
+              my $sqfreq = ($freq[$_]>0) ? $wfreq2[$_]/$freq[$_] : 0;
+              my $var = $sqfreq - $afreq**2;
+              my $sigma = $var>0 ? sqrt($var) : 0;
+              print "$sigma ";
+         }
+         if ($opt_c) {
+              $qum += $wout/$sumw;
+              print "$qum ";
+         }
+       } elsif ($opt_c) {
+              $qum += $fout/$sumc;
+              print "$qum ";
+       }
+       print "\n";
+    }
+    if ($opt_o) {print "underflow: $uflow overflow: $oflow\n"}

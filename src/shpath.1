@@ -1,0 +1,40 @@
+.TH SHPATH 1  4/8/93
+.SH NAME
+shpath \- show path
+.SH SYNOPSIS
+.B shpath
+[
+.I \-f
+]
+[
+.I \-p <pathname>
+]
+[
+.I <filename>
+]
+.SH DESCRIPTION
+.B shpath
+provides a simple way of showing paths or of finding the instances of a
+particular file in the path.
+.SH OPTIONS
+.TP
+.B \-f
+Echo only the first found instance of a file or the first directory in the
+path. 
+.TP
+.B \-p <pathname>
+Search the path specified by the environment variable
+.B <pathname>
+instead of PATH.
+.TP
+.B <filename>
+Find the instance(s) of this file in the path.
+.SH EXAMPLES
+.PP
+To see your path, you simply do shpath.
+.PP
+To see your man path, do shpath -p MANPATH.
+.PP
+To find where the program xterm is, do shpath xterm.
+.SH "AUTHOR"
+Paul Rensing at SLAC (rensing@slac.stanford.edu)

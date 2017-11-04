@@ -1,0 +1,60 @@
+#!/bin/sh 
+
+Usage()
+{
+	echo "`basename $0`: [-r] {-mac | -dos} infile" 1>&2
+	exit 1
+}
+
+
+# Variables:
+reverse=0
+mode="none"
+
+
+while [ -n "$1" ]; do
+  case "$1" in
+    -r)
+          reverse=1;
+	  shift;
+	  ;;
+    -mac|-dos)
+          mode="$1";
+	  shift;
+          ;;
+    -*)	
+          Usage;
+	  exit 2;
+	  ;;
+    *)	
+          break;
+	  ;;
+  esac
+done
+
+if [ $# != 1 ]; then
+  Usage
+fi
+
+case "$mode" in
+  -mac)
+	if [ $reverse = 1 ]; then
+	  cmd="tr \012 \015 "
+	else
+	  cmd="tr \015 \012 "
+	fi
+      ;;
+   -dos)
+	if [ $reverse = 1 ]; then
+	  cmd="awk {printf\"%s%c\n\",\$0,13}"
+	else
+	  cmd="tr -d \015 "
+	fi
+      ;;
+   *)
+        Usage;;
+esac
+
+$cmd < $1
+
+exit 0;

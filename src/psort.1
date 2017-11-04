@@ -1,0 +1,38 @@
+.TH PSORT 1  1/22/92
+.SH NAME
+psort \- priority sort
+.SH SYNOPSIS
+.B psort
+.I patternfile
+[
+.I filename
+]
+.SH DESCRIPTION
+.B psort 
+implements a sort of
+.I filename
+(or stdin if no filename supplied),
+based on a list of regular expressions in
+.I patternfile.
+All lines in
+.I filename
+which match the first regexp in
+.I patternfile
+are sorted
+alphabetically and appear before the sorted set of remaining lines
+that match the second regexp, etc.
+The result will overwrite
+.I filename
+if it was specified; otherwise the result will go on stdout.
+.PP
+This is particulary useful in sorting one's
+.B ~/.newsrc
+file.
+
+.SH "SEE ALSO"
+sort(1)
+.SH "AUTHOR"
+Tom Pavel at SLAC (pavel@pixel.slac.stanford.edu)
+.SH "BUGS"
+Doesn't prioritize the set of lines that match the first regexp by the
+remaining regexp's; you just get the alphabetically sorted set.

@@ -1,0 +1,4 @@
+#! /bin/sh
+
+awk '    {sumval += $1*$2; sumwts += $2;}
+     END {print sumval/sumwts}' $*

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+if [ $# -lt 1 ]; then
+    echo 1>&2 "Usage: $0 local other base output"
+    exit 1
+fi
+
+local=$1
+other=$2
+base=$3
+output=$4
+
+OUTPUT=`emacsclient --no-wait --eval "(ediff-merge-with-ancestor \"$local\" \"$other\" \"$base\" nil \"$output\")" 2>&1`
+echo $OUTPUT | grep -v "Ediff Control Panel"
+
+if echo "$OUTPUT" | grep -q '^*ERROR*'; then
+    exit 1
+fi
